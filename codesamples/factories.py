@@ -27,11 +27,11 @@ def initial_data():
         (
             """\
             <pre><code><span class=\"comment\"># Simple output (with Unicode)</span>
-            >>> print(\"Hello, I'm Python!\")
+            >>> print("Hello, I'm Python!")
             <span class=\"output\">Hello, I'm Python!</span>
 
             <span class=\"comment\"># Input, assignment</span>
-            >>> name = input('What is your name?\\n')
+            >>> name = input('What is your name?\n')
             <span class=\"output\">What is your name?
             Python</span>
             >>> print(f'Hi, {name}.')
@@ -122,11 +122,12 @@ def initial_data():
             <code>
             <span class=\"comment\"># Write Fibonacci series up to n</span>
             >>> def fib(n):
-            >>>     a, b = 0, 1
-            >>>     while a &lt; n:
-            >>>         print(a, end=' ')
-            >>>         a, b = b, a+b
-            >>>     print()
+            ...     a, b = 0, 1
+            ...     while a &lt; n:
+            ...         print(a, end=' ')
+            ...         a, b = b, a+b
+            ...     print()
+            ...
             >>> fib(1000)
             <span class=\"output\">0 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610</span>
             </code>

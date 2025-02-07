@@ -2,6 +2,7 @@ import re
 
 from django.urls import reverse
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -178,13 +179,15 @@ def update_supernav():
         'last_updated': timezone.now(),
     })
 
-    box, _ = Box.objects.update_or_create(
+    box, created = Box.objects.update_or_create(
         label='supernav-python-downloads',
         defaults={
             'content': content,
             'content_markup_type': 'html',
         }
     )
+    if not created:
+        box.save()
 
 
 def update_download_landing_sources_box():
@@ -207,13 +210,15 @@ def update_download_landing_sources_box():
         return
 
     source_content = render_to_string('downloads/download-sources-box.html', context)
-    source_box, _ = Box.objects.update_or_create(
+    source_box, created = Box.objects.update_or_create(
         label='download-sources',
         defaults={
             'content': source_content,
             'content_markup_type': 'html',
         }
     )
+    if not created:
+        source_box.save()
 
 
 def update_homepage_download_box():
@@ -233,13 +238,15 @@ def update_homepage_download_box():
 
     content = render_to_string('downloads/homepage-downloads-box.html', context)
 
-    box, _ = Box.objects.update_or_create(
+    box, created = Box.objects.update_or_create(
         label='homepage-downloads',
         defaults={
             'content': content,
             'content_markup_type': 'html',
         }
     )
+    if not created:
+        box.save()
 
 
 @receiver(post_save, sender=Release)
@@ -271,6 +278,7 @@ def purge_fastly_download_pages(sender, instance, **kwargs):
     if instance.is_published:
         # Purge our common pages
         purge_url('/downloads/')
+        purge_url('/downloads/feed.rss')
         purge_url('/downloads/latest/python2/')
         purge_url('/downloads/latest/python3/')
         purge_url('/downloads/macos/')
@@ -322,11 +330,36 @@ class ReleaseFile(ContentManageable, NameSlugModel):
         blank=True,
         help_text="GPG Signature URL"
     )
+    sigstore_signature_file = models.URLField(
+        "Sigstore Signature URL", blank=True, help_text="Sigstore Signature URL"
+    )
+    sigstore_cert_file = models.URLField(
+        "Sigstore Cert URL", blank=True, help_text="Sigstore Cert URL"
+    )
+    sigstore_bundle_file = models.URLField(
+        "Sigstore Bundle URL", blank=True, help_text="Sigstore Bundle URL"
+    )
+    sbom_spdx2_file = models.URLField(
+        "SPDX-2 SBOM URL", blank=True, help_text="SPDX-2 SBOM URL"
+    )
     md5_sum = models.CharField('MD5 Sum', max_length=200, blank=True)
     filesize = models.IntegerField(default=0)
     download_button = models.BooleanField(default=False, help_text="Use for the supernav download button for this OS")
+
+    def validate_unique(self, exclude=None):
+        if self.download_button:
+            qs = ReleaseFile.objects.filter(release=self.release, os=self.os, download_button=True).exclude(pk=self.id)
+            if qs.count() > 0:
+                raise ValidationError("Only one Release File per OS can have \"Download button\" enabled")
+        super(ReleaseFile, self).validate_unique(exclude=exclude)
 
     class Meta:
         verbose_name = 'Release File'
         verbose_name_plural = 'Release Files'
         ordering = ('-release__is_published', 'release__name', 'os__name', 'name')
+
+        constraints = [
+            models.UniqueConstraint(fields=['os', 'release'],
+            condition=models.Q(download_button=True),
+            name="only_one_download_per_os_per_release"),
+        ]
