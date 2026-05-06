@@ -76,7 +76,7 @@ dev = [
     "django-debug-toolbar==6.2.0",
     "coverage",
     "ddt",
-    "model-bakery==1.23.3",
+    "model-bakery==1.23.4",
     "ruff==0.15",
 ]
 docs = [
