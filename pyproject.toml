@@ -75,7 +75,7 @@ dev = [
     "factory-boy==3.3.3",
     "Faker==40.4.0",
     "tblib==1.7.0",
-    "responses==0.26.0",
+    "responses==0.26.3",
     "django-debug-toolbar==6.2.0",
     "coverage",
     "ddt",
